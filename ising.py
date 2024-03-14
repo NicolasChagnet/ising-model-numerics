@@ -21,6 +21,7 @@ def create_lattice(n, state=0):
         case _:
             return np.random.choice(np.array([-1, 1], dtype=np.int64), (n, n))
 
+
 @njit
 def compute_hamiltonian_term(i: int, j: int, lattice: np.ndarray, h: np.float64):
     """Computes the Hamiltonian at a lattice site i,j given a lattice state as well as parameters values.
@@ -45,6 +46,7 @@ def compute_hamiltonian_term(i: int, j: int, lattice: np.ndarray, h: np.float64)
     Hi = -term_sum_neighbors - h * si
     return Hi
 
+
 @njit
 def compute_hamiltonian_from_site(lattice: np.ndarray, h: np.float64):
     """Computes the Hamiltonian given a lattice state as well as parameters values using the site method.
@@ -63,6 +65,7 @@ def compute_hamiltonian_from_site(lattice: np.ndarray, h: np.float64):
             H += compute_hamiltonian_term(i, j, lattice, h)
     return H
 
+
 @jit
 def compute_magnetization(lattice: np.ndarray):
     """Computes the magnetization for a given lattice configuration
@@ -76,6 +79,7 @@ def compute_magnetization(lattice: np.ndarray):
     N = np.int64(lattice.size)
     return np.sum(lattice) / N
 
+
 def compute_deltaH(spin: tuple, lattice: np.ndarray, h: np.float64):
     n = lattice.shape[0]
     i, j = spin
@@ -85,12 +89,23 @@ def compute_deltaH(spin: tuple, lattice: np.ndarray, h: np.float64):
     deltaH = (-2) * (-(si) * sum_nn - si * h)
     return deltaH
 
+
 def compute_deltaM(spin: tuple, lattice: np.ndarray):
     N = lattice.size
-    return (- 2 * lattice[spin] / N)
+    return -2 * lattice[spin] / N
 
-def update_lattice(spin: tuple, lattice: np.ndarray, flips: list, energies: list, magnetizations: list, i: int,
-                   n: int, beta: np.float64, h: np.float64):
+
+def update_lattice(
+    spin: tuple,
+    lattice: np.ndarray,
+    flips: list,
+    energies: list,
+    magnetizations: list,
+    i: int,
+    n: int,
+    beta: np.float64,
+    h: np.float64,
+):
     """Update step for the Metropolic MC algorithm (in-place)
 
     Args:
@@ -159,21 +174,20 @@ def monte_carlo_metropolis(n, beta: float, h: float, max_steps=100, initial_stat
     for i in range(max_steps):
         match method:
             case "random":
-                for j in range(n ** 2):
+                for j in range(n**2):
                     if i == 0 and j == 0:
                         continue
                     # Choose a random spin
-                    rand_spin = (
-                        int(np.random.random() * n),
-                        int(np.random.random() * n)
-                    )
+                    rand_spin = (int(np.random.random() * n), int(np.random.random() * n))
                     update_lattice(rand_spin, lattice, flips, energies, magnetizations, i * n**2 + j, n, beta64, h64)
             case "sweep":
                 for u in range(n):
                     for v in range(n):
                         if i == 0 and u == 0 and v == 0:
                             continue
-                        update_lattice((u, v), lattice, flips, energies, magnetizations, i * n**2 + u * n + v, n, beta64, h64)
+                        update_lattice(
+                            (u, v), lattice, flips, energies, magnetizations, i * n**2 + u * n + v, n, beta64, h64
+                        )
             case _:
                 raise ValueError("Unknown method selected!")
 
@@ -189,7 +203,7 @@ def monte_carlo_metropolis(n, beta: float, h: float, max_steps=100, initial_stat
         "beta": beta64,
         "h": h64,
         "number_steps": loop_steps,
-        "time": np.arange(1, loop_steps + 1)
+        "time": np.arange(1, loop_steps + 1),
     }
 
     return object_return
