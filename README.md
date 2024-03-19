@@ -21,3 +21,13 @@ In the MC method, we randomly flip spins and accept/reject the flip depending on
     2. Flip the spin and compute the associated $\Delta H$
         - If $\Delta H <0$, accept the flip
         - Otherwise, accept with propability $p = e^{- \beta \Delta H}$
+
+# Genetic Algorithm
+
+In the GA method, we create a random population of states ($n \times n matrices$) with size $M$ on which we apply the following steps for $X$ cycles:
+    
+1. Create $Y$ children from random pairs of parents:
+    - To create children, we divide each parent in two blocks using a random divider $s$ (so we have two sets of two blocks,of size $s \times n$ and $(n - s) \times m$). We cross-combine these blocks to create two new matrices.
+    - We mutate each child by randomly flipping some of their spins per the mutation rate.
+2. Add children to the population, compute their fitness score (the energy in our case). The population is now of size $M + Y$.
+3. Sort the population w.r.t. the fitness score and cutoff the $Y$ poorest members. The population is back to size $M$.
