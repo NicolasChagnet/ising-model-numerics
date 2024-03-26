@@ -26,8 +26,10 @@ In the MC method, we randomly flip spins and accept/reject the flip depending on
 
 In the GA method, we create a random population of states ($n \times n matrices$) with size $M$ on which we apply the following steps for $X$ cycles:
     
-1. Create $Y$ children from random pairs of parents:
+1. Create $Y$ children from random pairs of parents (their probability of choice is proportional to the fitness):
     - To create children, we divide each parent in two blocks using a random divider $s$ (so we have two sets of two blocks,of size $s \times n$ and $(n - s) \times m$). We cross-combine these blocks to create two new matrices.
     - We mutate each child by randomly flipping some of their spins per the mutation rate.
-2. Add children to the population, compute their fitness score (the energy in our case). The population is now of size $M + Y$.
+2. Add children to the population, compute their fitness score. The population is now of size $M + Y$.
 3. Sort the population w.r.t. the fitness score and cutoff the $Y$ poorest members. The population is back to size $M$.
+
+In order to include thermal fluctuations, we need to compute the Gibbs free energy $G = U - T S$ where $U$ is the internal energy and $S$ the entropy. The internal energy of a given configuration is obtained by looking computing its Hamiltonian. The entropy is more delicate: is it a statistical property and usually requires the computation of the entire partition function. Instead, we approximate it by its cumulants following these two papers \[[1](https://doi.org/10.1142/S0217984905008153), [2](https://doi.org/10.1016/S0378-4371%2802%2901327-4)\].
