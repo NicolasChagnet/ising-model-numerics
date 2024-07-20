@@ -271,7 +271,9 @@ def checkerboard(i, lattice, beta64, h64, energies, magnetizations, mask_even, m
     energies[i] = energies[i - 1] + np.sum(delta_contributions_flipped * accepted_flips)
 
 
-def monte_carlo_metropolis(n: int, beta: float, h: float, max_steps=100, initial_state=0, method="checkerboard"):
+def monte_carlo_metropolis(
+    n: int, beta: float, h: float, max_steps=100, initial_state=0, method="checkerboard", store_history=False
+):
     """General Monte Carlo simulation of Ising spins for a given number of spins, inverse temperature, spin coupling and external coupling.
 
     Args:
@@ -304,10 +306,12 @@ def monte_carlo_metropolis(n: int, beta: float, h: float, max_steps=100, initial
     # Store outputs of the program
     energies = np.zeros(loop_steps, dtype=np.float64)
     magnetizations = np.zeros(loop_steps, dtype=np.float64)
+    lattice_history = np.zeros((loop_steps, n, n))
 
     # We start by initializing the lattice
     lattice_init = create_lattice(n, state=initial_state)
     lattice = lattice_init.copy()
+    lattice_history[0] = lattice_init.copy()
     energies[0] = compute_hamiltonian_from_site(lattice, h64)
     magnetizations[0] = compute_magnetization(lattice)
 
@@ -317,6 +321,8 @@ def monte_carlo_metropolis(n: int, beta: float, h: float, max_steps=100, initial
                 random_method(i, lattice, beta64, h64, energies, magnetizations)
             case "checkerboard":
                 checkerboard(i, lattice, beta64, h64, energies, magnetizations, mask_even, mask_odd)
+        if store_history:
+            lattice_history[i] = lattice.copy()
 
     benergies = [beta64 * energy for energy in energies]
 
@@ -330,6 +336,7 @@ def monte_carlo_metropolis(n: int, beta: float, h: float, max_steps=100, initial
         "h": h64,
         "number_steps": loop_steps,
         "time": np.arange(1, loop_steps + 1),
+        "lattice_history": lattice_history,
     }
 
     return object_return
