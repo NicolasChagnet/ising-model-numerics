@@ -1,0 +1,13 @@
+[project]
+name = "ising-model-numerics"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "ipykernel>=6.29.5",
+    "matplotlib>=3.9.2",
+    "numba>=0.60.0",
+    "numpy>=2.0.2",
+    "seaborn>=0.13.2",
+]

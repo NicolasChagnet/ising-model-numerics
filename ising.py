@@ -1,9 +1,6 @@
-import functools
-
-import numba as nb
 import numpy as np
 import numpy.random as rand
-from numba import float64, int64, jit, njit, prange, void
+from numba import float64, int64, njit, void
 
 
 @njit([int64[:, :](int64)])
@@ -39,15 +36,14 @@ def create_lattice(n, state=0):
             return create_random_state(n)
 
 
-@njit([float64(int64, int64, int64[:, :], float64)])
-def compute_hamiltonian_term(x: int, y: int, lattice: np.ndarray, h: np.float64):
+@njit([float64(int64, int64, int64[:, :])])
+def compute_hamiltonian_term(x: int, y: int, lattice: np.ndarray):
     """Computes the Hamiltonian at a lattice site i,j given a lattice state as well as parameters values.
 
     Args:
         x (int): row of lattice site
         y (int): column of lattice site
         lattice (ndarray): lattice of spins in a given state.
-        h (float64): External field coupling.
 
     Returns:
         float64: Value of the Hamiltonian at site i,j for this configuration.
@@ -58,9 +54,8 @@ def compute_hamiltonian_term(x: int, y: int, lattice: np.ndarray, h: np.float64)
     term_sum_neighbors = np.float64(0.0)
     for neighbor in neighbors:
         term_sum_neighbors += si * lattice[neighbor]
-    # Remove the extra factor of 4 due to duplicate counting of pairs
-    term_sum_neighbors = term_sum_neighbors / 2
-    Hi = -term_sum_neighbors - h * si
+    # Remove the extra factor of 2 due to duplicate counting of pairs
+    Hi = -term_sum_neighbors / 2
     return Hi
 
 
@@ -79,8 +74,8 @@ def compute_hamiltonian_from_site(lattice: np.ndarray, h: np.float64):
     H = np.float64(0.0)
     for x in range(n):
         for y in range(n):
-            H += compute_hamiltonian_term(x, y, lattice, h)
-    return H
+            H += compute_hamiltonian_term(x, y, lattice)
+    return H - h * np.sum(lattice)
 
 
 @njit([float64(int64[:, :])])
@@ -191,16 +186,15 @@ def update_lattice(
 
 @njit([void(int64, int64[:, :], float64, float64, float64[:], float64[:])])
 def random_method(i, lattice, beta64, h64, energies, magnetizations):
-    """This method picks a random spin N = n^2 times and updates the lattice
+    """This method picks a random spin N = n^2 times and updates the lattice.
 
     Args:
-        i (int): Index of Monte-Carlo step
-        lattice (np.ndarray): _description_
-        beta64 (np.float64): _description_
-        h64 (np.float64): _description_
-        flips (list): _description_
-        energies (list): _description_
-        magnetizations (list): _description_
+        i (int): Index of Monte-Carlo step.
+        lattice (np.ndarray): List of lattices to update.
+        beta64 (np.float64): Inverse temperature.
+        h64 (np.float64): External coupling.
+        energies (np.ndarray): History of energies.
+        magnetizations (np.ndarray): History of magnetizations.
     """
     n = lattice.shape[0]
     x, y = (int(rand.rand() * n), int(rand.rand() * n))
@@ -234,15 +228,15 @@ def get_mask_odd(n):
 
 
 def checkerboard(i, lattice, beta64, h64, energies, magnetizations, mask_even, mask_odd):
-    """This method updates the N spins in two batches of N/2 in a checkerboard pattern allowing for parallelization
+    """This method updates the N spins in two batches of N/2 in a checkerboard pattern allowing for parallelization.
 
     Args:
-        i (int): Index of Monte-Carlo step
-        lattice (np.ndarray): _description_
-        beta64 (np.float64): _description_
-        h64 (np.float64): _description_
-        energies (list): _description_
-        magnetizations (list): _description_
+        i (int): Index of Monte-Carlo step.
+        lattice (np.ndarray): List of lattices to update.
+        beta64 (np.float64): Inverse temperature.
+        h64 (np.float64): External coupling.
+        energies (np.ndarray): History of energies.
+        magnetizations (np.ndarray): History of magnetizations.
     """
     # We extract the checkerboard sublattice matching the parity of the iteration counter
     n = lattice.shape[0]
@@ -331,6 +325,7 @@ def monte_carlo_metropolis(
         "lattice_init": lattice_init,
         "benergies": benergies,
         "magnetizations": magnetizations,
+        "energy_per_site": energies / n**2,
         "n": n,
         "beta": beta64,
         "h": h64,
